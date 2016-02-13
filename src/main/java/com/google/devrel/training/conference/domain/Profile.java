@@ -5,14 +5,16 @@ import com.googlecode.objectify.annotation.Entity;
 import com.googlecode.objectify.annotation.Id;
 
 
+
 // TODO indicate that this class is an Entity
+@Entity
 public class Profile {
 	String displayName;
 	String mainEmail;
 	TeeShirtSize teeShirtSize;
 
 	// TODO indicate that the userId is to be used in the Entity's key
-	String userId;
+	@Id String userId;
     
     /**
      * Public constructor for Profile.
@@ -22,6 +24,7 @@ public class Profile {
      * @param teeShirtSize The User's tee shirt size
      * 
      */
+	
     public Profile (String userId, String displayName, String mainEmail, TeeShirtSize teeShirtSize) {
     	this.userId = userId;
     	this.displayName = displayName;
@@ -49,5 +52,10 @@ public class Profile {
      * Just making the default constructor private.
      */
     private Profile() {}
+    
+    public void update(String displayName, TeeShirtSize teeShirtSize) {
+		this.displayName = displayName;
+		this.teeShirtSize = teeShirtSize;
+	}
 
 }
