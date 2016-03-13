@@ -6,8 +6,15 @@ import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.config.ApiMethod.HttpMethod;
 import com.google.api.server.spi.response.UnauthorizedException;
+import com.google.appengine.api.memcache.MemcacheService;
+import com.google.appengine.api.memcache.MemcacheServiceFactory;
+import com.google.appengine.api.taskqueue.Queue;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
+
 import com.google.appengine.api.users.User;
 import com.google.devrel.training.conference.Constants;
+import com.google.devrel.training.conference.domain.Announcement;
 import com.google.devrel.training.conference.domain.Conference;
 import com.google.devrel.training.conference.domain.Profile;
 import com.google.devrel.training.conference.form.ConferenceForm;
@@ -211,10 +218,15 @@ public class ConferenceApi {
         // Save Conference and Profile Entities
         ofy().save().entities(profile,conference).now();
 
+        Queue queue = QueueFactory.getDefaultQueue();
+       
+        queue.add(TaskOptions.Builder.withUrl("/send_email").param("email", user.getEmail())
+				.param("conferenceInfo", conference.toString()));
 
          return conference;
          }
-    
+
+	@ApiMethod(name = "queryConferences", path = "queryConferences", httpMethod = HttpMethod.POST)
     public List queryConferences(ConferenceQueryForm conferenceQueryForm) { 
     	Iterable<Conference> conferenceIterable = conferenceQueryForm.getQuery(); 
     	List<Conference> result = new ArrayList<>(0); 
@@ -249,10 +261,7 @@ public class ConferenceApi {
     )
     public List<Conference> getConferencesFiltered(){
     	Query query = ofy().load().type(Conference.class);
-    	query = query.filter("maxAttendees >",10);
-    	query = query.filter("city =", "London");
-    	query = query.filter("topics =", "Web Technologies");
-    	query = query.filter("month =", 1) .order("maxAttendees").order("name");
+    	
     	return query.list();    
     }
 
@@ -533,5 +542,19 @@ public class ConferenceApi {
 		}
 		return result;
 	}
+    
+    @ApiMethod(
+    	    name="getAnnouncement",
+    	    path = "announcement",
+    	    httpMethod = HttpMethod.GET
+    	    )
+    	    public Announcement getAnnouncement(){
+    	    //TODO GET announcement from memcache by key and if it exist return it
+    		MemcacheService memcacheService = MemcacheServiceFactory.getMemcacheService();
+    		Announcement announcement = new Announcement((String)memcacheService.get(Constants.MEMCACHE_ANNOUNCEMENTS_KEY));
+
+    	    return announcement;
+    	    }
+  
 
 }
